@@ -23,25 +23,36 @@ _SOLVERS = {"well_mixed": well_mixed, "cross_flow": cross_flow,
 
 def solve_stage(membrane: Membrane, x_feed, theta: float, p_high: float, p_low: float,
                 pattern: str = "countercurrent", feed_flow: float = 1.0,
-                profile: bool = False, x_ret_guess=None) -> StageResult:
+                profile: bool = False, x_ret_guess=None, sweep_flow: float = 0.0,
+                sweep_composition=None) -> StageResult:
     """Single membrane stage at a given stage cut.
 
     pattern : 'well_mixed' | 'cross_flow' | 'cocurrent' | 'countercurrent'
     Pressures in bar, feed_flow in mol/s.
+    sweep_flow (mol/s) and sweep_composition (e.g. {'N2': 1}) add a permeate
+    sweep gas; only for 'cocurrent' and 'countercurrent', where the permeate
+    has a flow path.  The stage cut is still the fraction of the feed that
+    permeates; the permeate outlet carries theta*feed_flow + sweep_flow.
     """
     try:
         f = _SOLVERS[pattern]
     except KeyError:
         raise ValueError(f"pattern must be one of {PATTERNS}") from None
+    sw = {}
+    if sweep_flow:
+        if pattern not in ("cocurrent", "countercurrent"):
+            raise ValueError("a sweep needs a permeate flow path: use 'cocurrent' or "
+                             "'countercurrent'")
+        sw = {"sweep_flow": sweep_flow, "sweep_composition": sweep_composition}
     if pattern == "well_mixed":
         return f(membrane, x_feed, theta, p_high, p_low, feed_flow)
     if pattern == "countercurrent" and x_ret_guess is not None:
         try:
             return f(membrane, x_feed, theta, p_high, p_low, feed_flow, profile=profile,
-                     x_ret_guess=x_ret_guess)
+                     x_ret_guess=x_ret_guess, **sw)
         except InfeasibleError:
             pass                       # fall back to the default starting guess
-    return f(membrane, x_feed, theta, p_high, p_low, feed_flow, profile=profile)
+    return f(membrane, x_feed, theta, p_high, p_low, feed_flow, profile=profile, **sw)
 
 
 def sweep_stage_cut(membrane: Membrane, x_feed, p_high: float, p_low: float,

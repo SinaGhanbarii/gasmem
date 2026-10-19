@@ -146,11 +146,16 @@ class StageResult:
     p_low: float
     profile: dict | None = field(default=None, repr=False)
     extra: dict = field(default_factory=dict, repr=False)
+    sweep_flow: float = 0.0                       # permeate-side sweep gas, mol/s
+    sweep_x: np.ndarray | None = field(default=None, repr=False)
 
     # -- flows ------------------------------------------------------------
+    # With a sweep, the stage cut is still the fraction of the *feed* that
+    # crosses the membrane, theta = 1 - L_R/F; the permeate outlet then
+    # carries theta*F + sweep_flow.
     @property
     def permeate_flow(self) -> float:
-        return self.theta * self.feed_flow
+        return self.theta * self.feed_flow + self.sweep_flow
 
     @property
     def retentate_flow(self) -> float:
@@ -167,13 +172,21 @@ class StageResult:
     def recovery(self, comp, stream: str = "permeate") -> float:
         """Fraction of the feed's `comp` that leaves in the chosen stream."""
         i = self._i(comp)
+        if self.x_feed[i] <= 0:
+            return float("nan")
+        to_ret = (1.0 - self.theta) * self.x_ret[i] / self.x_feed[i]
         if stream.startswith("p"):
+            if self.sweep_flow > 0:          # net transfer out of the feed
+                return float(1.0 - to_ret)
             return float(self.theta * self.y_perm[i] / self.x_feed[i])
-        return float((1.0 - self.theta) * self.x_ret[i] / self.x_feed[i])
+        return float(to_ret)
 
     def mass_balance_error(self) -> float:
         """Max absolute component balance error, relative to feed flow."""
-        err = self.x_feed - self.theta * self.y_perm - (1.0 - self.theta) * self.x_ret
+        sw = (self.sweep_flow / self.feed_flow * self.sweep_x
+              if self.sweep_flow > 0 else 0.0)
+        err = (self.x_feed + sw - (self.permeate_flow / self.feed_flow) * self.y_perm
+               - (1.0 - self.theta) * self.x_ret)
         return float(np.max(np.abs(err)))
 
     @property
@@ -188,7 +201,10 @@ class StageResult:
             d[f"x_feed_{c}"] = xf
             d[f"x_ret_{c}"] = xr
             d[f"y_perm_{c}"] = yp
-            d[f"recovery_perm_{c}"] = self.theta * yp / xf if xf > 0 else np.nan
+        for c in self.components:
+            d[f"recovery_perm_{c}"] = self.recovery(c, "permeate")
+        if self.sweep_flow > 0:
+            d["sweep_flow_mol_s"] = self.sweep_flow
         d.update({k: v for k, v in self.extra.items() if np.isscalar(v)})
         return d
 
@@ -196,8 +212,11 @@ class StageResult:
         lines = [f"{self.pattern}: stage cut = {self.theta:.4f}, area = {self.area:.4g} m2, "
                  f"p_h/p_l = {self.p_high:g}/{self.p_low:g} bar"]
         lines.append(f"{'comp':>6} {'feed':>8} {'retent.':>8} {'perm.':>8} {'rec->perm':>10}")
+        if self.sweep_flow > 0:
+            lines[0] += (f", sweep = {self.sweep_flow / self.feed_flow:.3g} x feed "
+                         f"({', '.join(f'{c} {v:.3g}' for c, v in zip(self.components, self.sweep_x))})")
         for c, xf, xr, yp in zip(self.components, self.x_feed, self.x_ret, self.y_perm):
-            rec = self.theta * yp / xf if xf > 0 else float("nan")
+            rec = self.recovery(c, "permeate")
             lines.append(f"{c:>6} {xf:8.4f} {xr:8.4f} {yp:8.4f} {rec:10.4f}")
         return "\n".join(lines)
 

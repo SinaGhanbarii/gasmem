@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ipynb_checkpoints/
+executed/
+# written by notebook 11 and the example scripts
+notebooks/example_user_data.csv
+*_layouts.csv
+*_theta1_sweep.csv
+stage_cut_sweep*.csv
+stage_cut_sweep*.png

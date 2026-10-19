@@ -21,7 +21,7 @@ def _find_toolkit():
     for p in [here, *here.parents]:                       # running from inside the folder
         if (p / "gasmem" / "__init__.py").exists():
             return p
-    for pat in ["/content/*/gasmem/__init__.py",           # Colab: zip unzipped in /content
+    for pat in ["/content/*/gasmem/__init__.py",           # Colab: repository cloned into /content
                 "/content/drive/MyDrive/gasmem/__init__.py",
                 "/content/drive/MyDrive/*/gasmem/__init__.py",
                 "/content/drive/MyDrive/*/*/gasmem/__init__.py",
@@ -38,21 +38,22 @@ try:
 except ImportError:
     IN_COLAB = False
 
+REPO = "https://github.com/SinaGhanbarii/gasmem.git"
 if TOOLKIT is None and IN_COLAB:
-    print("Looking for the toolkit in your Google Drive (approve the access request)...")
-    from google.colab import drive
-    drive.mount("/content/drive")
+    # opened from the "Open in Colab" badge: fetch the toolkit from GitHub
+    import subprocess
+    print("Downloading the toolkit from", REPO)
+    if subprocess.run(["git", "clone", "-q", "--depth", "1", REPO, "/content/gasmem"]).returncode:
+        print("Download failed; looking in your Google Drive instead (approve the access request)")
+        from google.colab import drive
+        drive.mount("/content/drive")
     TOOLKIT = _find_toolkit()
-    if TOOLKIT is None:
-        print("Not found in Drive. Choose gas-membrane-stagecut-toolkit.zip to upload:")
-        import zipfile
-        from google.colab import files
-        for name in files.upload():
-            zipfile.ZipFile(name).extractall("/content")
-        TOOLKIT = _find_toolkit()
+if IN_COLAB:
+    from google.colab import output
+    output.enable_custom_widget_manager()               # makes the sliders work in Colab
 if TOOLKIT is None:
     raise FileNotFoundError("Could not find the 'gasmem' folder. Open this notebook from inside "
-                            "the unzipped gas-membrane-stagecut-toolkit folder.")
+                            "your copy of the repository (git clone " + REPO + ").")
 sys.path.insert(0, str(TOOLKIT))
 os.chdir(TOOLKIT / "notebooks")
 print("Using toolkit at", TOOLKIT)
@@ -62,9 +63,14 @@ import numpy as np, pandas as pd, matplotlib.pyplot as plt
 import ipywidgets as w
 from IPython.display import display, Markdown
 from gasmem import *
+import gasmem.plotting as gasmem_plot
 from gasmem.plotting import (plot_stage_cut_tradeoff, plot_purity_recovery, plot_profiles,
                              bar_breakdown, COLORS, MARKERS)
 pd.set_option("display.precision", 4)"""
+
+
+BADGE = ("[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)]"
+         "(https://colab.research.google.com/github/SinaGhanbarii/gasmem/blob/main/notebooks/{name})")
 
 
 def md(s):
@@ -106,6 +112,9 @@ composition and the **flow pattern** inside the module.
 | 06 | Multistage, energy, cost | Recycle cascades; compressor and vacuum power; indicative cost |
 | 07 | Validation | Comparison with Pan (1986), Merkel (2010), Coker (1998), Makaruk (2010) and Feng (1999) |
 | 08 | Point by point | 274 digitised measurements from Pan and Feng, plus Makaruk's model curves |
+| 09 | Design optimisation | Stage cut for a specification; optimum stage cuts and pressures for a cascade |
+| 10 | Sweep and shell-side pressure drop | Permeate sweep gas; feed-side pressure drop in a fixed module |
+| 11 | Your own data | Compare the models with your measurements, fit permeances, share the results |
 
 Every notebook runs top to bottom. Interactive cells use `ipywidgets`; if the sliders do not
 appear, run `pip install ipywidgets` and restart the kernel.
@@ -1399,13 +1408,388 @@ mixed-gas permeances that differ from pure-gas values (Pan's acid gases).
 ]
 
 
+# ---------------------------------------------------------------------------
+NOTEBOOKS["09_design_optimisation.ipynb"] = [
+    md(r"""
+# 09 · Design optimisation: choosing stage cuts and pressures
+
+Earlier notebooks set the stage cuts by hand. Here the toolkit chooses them.
+
+* `stage_cut_for_spec` finds the stage cut of **one stage** that meets one specification
+  (a purity or a recovery). It is a scalar root-find and takes about a second.
+* `optimise` handles **any layout and several variables**. It minimises cost per tonne,
+  membrane area, power or specific energy, subject to a minimum purity and recovery of a product.
+
+The case is biogas upgrading at Makaruk et al. (2010) conditions: 40 % CO₂ / 60 % CH₄,
+1 000 Nm³/h, polyimide membrane with α = 35, target 98 % CH₄ in the retentate product.
+"""),
+    code(SETUP),
+    code("""
+m  = Membrane(MEMBRANE_PRESETS["Polyimide CO2/CH4, a=35 (Makaruk 2010)"])
+xf = FEED_PRESETS["biogas, 60% CH4 (Makaruk 2010)"]
+F  = nm3h_to_mols(1000)
+"""),
+    md(r"""
+## 1. One stage, one specification
+
+What stage cut gives 98 % CH₄ in the retentate, for each flow pattern? The answer fixes the
+methane recovery, which a single stage cannot choose independently.
+"""),
+    code("""
+rows = []
+for pat in PATTERNS:
+    try:
+        r = stage_cut_for_spec(m, xf, "CH4", 0.98, p_high=10, p_low=1, pattern=pat,
+                               stream="retentate", spec="purity", feed_flow=F)
+        rows.append({"pattern": LABELS[pat], "stage cut": r.theta,
+                     "CH4 recovery": r.recovery("CH4", "retentate"), "area m2": r.area})
+    except InfeasibleError as e:
+        rows.append({"pattern": LABELS[pat], "note": str(e)})
+pd.DataFrame(rows).set_index("pattern")
+"""),
+    md(r"""
+Only cross-flow and counter-current stages reach 98 % at a pressure ratio of 10. In a well-mixed
+stage the whole permeate side sees the retentate composition, and in a co-current stage the
+permeate-side CO₂ builds up along the module; in both, the driving force for CO₂ vanishes before the
+retentate is pure enough. `stage_cut_for_spec` reports the reachable range instead of failing
+silently.
+
+Even the stages that reach the target lose 18–24 % of the methane. A recovery target therefore
+needs a cascade, and a cascade has several stage cuts and pressures to choose: that is the job of
+`optimise`.
+
+## 2. Several variables: a two-stage stripping cascade
+
+Write a small function that builds the flowsheet from the variables you want to choose. Here:
+the two stage cuts and the feed pressure, with cross-flow stages and a 1 bar permeate.
+"""),
+    code("""
+def design(theta1, theta2, p_high):
+    return two_stage_stripping(m, xf, F,
+                               StageSpec(theta1, p_high, 1.0, "cross_flow"),
+                               StageSpec(theta2, p_high, 1.0, "cross_flow"))
+
+bounds = {"theta1": (0.15, 0.6), "theta2": (0.15, 0.7), "p_high": (5.0, 20.0)}
+best = optimise(design, bounds, product="slow-gas product", component="CH4",
+                purity=0.98, recovery=0.97, objective="cost")
+print(best.summary())
+"""),
+    md(r"""
+`optimise` first scans the design space with a quasi-random (Sobol) sample, then refines the best
+point that meets the targets with a constrained local optimiser. Every evaluation is kept in
+`best.history`, so the scan doubles as a map of the trade-off:
+"""),
+    code("""
+h = best.history[best.history["solved"]]
+fig, ax = plt.subplots(1, 2, figsize=(10, 4))
+for a, col, lab in ((ax[0], "purity", "CH₄ purity"), (ax[1], "recovery", "CH₄ recovery")):
+    sc = a.scatter(h["theta1"], h["theta2"], c=h[col], cmap="viridis", s=28)
+    a.plot(best.variables["theta1"], best.variables["theta2"], "*", color="#e34948", ms=16,
+           mec="white")
+    a.set_xlabel("stage cut 1"); a.set_ylabel("stage cut 2"); a.set_title(f"{lab} (★ optimum)")
+    fig.colorbar(sc, ax=a)
+plt.tight_layout()
+"""),
+    md(r"""
+## 3. The optimum depends on the prices
+
+With two active constraints (purity and recovery) and three variables, one degree of freedom is
+left, and the cost assumptions decide where it goes. Cheap electricity favours a high feed
+pressure (less membrane); expensive electricity favours a lower pressure and more membrane.
+
+The defaults in `CostAssumptions` are placeholders, so treat the numbers as an illustration of the
+trend, not as prices. Each optimisation below starts from the previous optimum (`x0`) with a short
+scan, which keeps it quick.
+"""),
+    code("""
+rows, x0 = [], best.variables
+for price in (0.05, 0.10, 0.20, 0.30):
+    ca = CostAssumptions(electricity_per_kWh=price)
+    o = optimise(design, bounds, "slow-gas product", "CH4", purity=0.98, recovery=0.97,
+                 objective="cost", ca=ca, x0=x0, n_scan=8)
+    x0 = o.variables
+    rows.append({"electricity USD/kWh": price, **o.variables, "USD/t CH4": o.value,
+                 "area m2": o.result.total_area, "power kW": o.result.total_power_kW,
+                 "feasible": o.feasible})
+pd.DataFrame(rows).set_index("electricity USD/kWh")
+"""),
+    md(r"""
+## 4. Other objectives and your own layouts
+
+* `objective="area"`, `"power"` or `"energy"` (kWh per tonne), or any function of the flowsheet
+  result, e.g. `objective=lambda r: r.total_area + 5 * r.total_power_kW`.
+* `product` takes a product label (`"slow-gas product"`, `"fast-gas product"`) or any stream name.
+* The design function can build any layout (single stage, three-stage, a sweep on one stage) and
+  expose any variable: pressures, stage cuts, flow patterns fixed inside it.
+
+The optimiser finds a *local* optimum from the best scanned point. For an important design, check
+`history` or repeat with a larger `n_scan` and a different `seed`.
+"""),
+]
+
+# ---------------------------------------------------------------------------
+NOTEBOOKS["10_sweep_and_shell_pressure_drop.ipynb"] = [
+    md(r"""
+# 10 · Permeate sweep gas and shell-side pressure drop
+
+Two refinements of the module models:
+
+1. **Sweep gas.** A gas fed into the permeate channel at its closed end dilutes the permeate,
+   lowers the fast-gas partial pressure on the permeate side and so raises the driving force. It
+   is used in post-combustion CO₂ capture (Merkel et al., 2010, sweep the second stage with the
+   boiler's combustion air) and in dehydration (a dry sweep).
+2. **Shell-side pressure drop.** In rating mode, the feed flowing along the fibre bundle loses
+   pressure as well as the permeate inside the bores.
+"""),
+    code(SETUP),
+    md(r"""
+## 1. Sweep gas in a CO₂-capture stage
+
+Flue gas, 13 % CO₂, Polaris membrane (Merkel 2010), 1.1 bar feed and 0.22 bar permeate, counter-
+current flow. The stage cut keeps its meaning, the fraction of the **feed** that crosses the
+membrane; the permeate outlet carries that gas plus the sweep.
+"""),
+    code("""
+m  = Membrane(MEMBRANE_PRESETS["Polaris CO2/N2 (Merkel 2010)"])
+xf = FEED_PRESETS["flue gas, 13% CO2 (Merkel 2010)"]
+rows = []
+for s in (0.0, 0.02, 0.05, 0.10, 0.20):
+    r = solve_stage(m, xf, 0.12, 1.1, 0.22, "countercurrent", 1.0,
+                    sweep_flow=s, sweep_composition={"N2": 1.0})
+    rows.append({"sweep / feed": s, "CO2 recovery": r.recovery("CO2"),
+                 "CO2 in retentate": r.x_ret[0], "CO2 in permeate": r.y_perm[0],
+                 "area m2 per mol/s": r.area, "mass balance": r.mass_balance_error()})
+pd.DataFrame(rows).set_index("sweep / feed")
+"""),
+    md(r"""
+At the same stage cut, a small sweep raises the CO₂ recovery and cuts the area sharply, because
+the permeate-side CO₂ partial pressure at the retentate end falls towards zero. The price is a
+more dilute permeate: the sweep leaves with it. That is why Merkel's design sends the swept
+permeate back to the boiler instead of to the CO₂ product.
+
+The figure shows the same effect along the module.
+"""),
+    code("""
+fig, ax = plt.subplots(1, 2, figsize=(10, 3.8))
+for k, s in enumerate((0.0, 0.05, 0.2)):
+    r = solve_stage(m, xf, 0.12, 1.1, 0.22, "countercurrent", 1.0, profile=True,
+                    sweep_flow=s, sweep_composition={"N2": 1.0})
+    p = r.profile
+    lab = f"sweep {s:g} × feed"
+    ax[0].plot(p["area_fraction"], 100 * p["x"][0], color=gasmem_plot.SERIES[k], label=lab)
+    ax[1].plot(p["area_fraction"], 1.1 * p["x"][0] - 0.22 * p["y"][0],
+               color=gasmem_plot.SERIES[k], label=lab)
+ax[0].set_ylabel("CO₂ on feed side (%)"); ax[1].set_ylabel("CO₂ partial-pressure difference (bar)")
+for a in ax:
+    a.set_xlabel("area fraction from the feed end"); a.legend()
+plt.tight_layout()
+"""),
+    md(r"""
+### An air sweep carries oxygen into the retentate
+
+With combustion air as the sweep, oxygen is on the permeate side but not in the feed, so it
+permeates **backwards** into the retentate. The model handles this; here the O₂ permeance is
+taken as 2.5 × N₂, an assumption for illustration.
+"""),
+    code("""
+m3 = Membrane({"CO2": 1000, "N2": 20, "O2": 50})
+r = solve_stage(m3, {"CO2": 0.13, "N2": 0.87, "O2": 0.0}, 0.12, 1.1, 0.22, "countercurrent", 1.0,
+                sweep_flow=0.1, sweep_composition={"N2": 0.79, "O2": 0.21})
+print(r.summary())
+print(f"mass-balance error {r.mass_balance_error():.1e}")
+"""),
+    md(r"""
+### Check against an independent solver
+
+The toolkit solves the counter-current problem by shooting from the retentate end. Here the same
+problem is solved with SciPy's collocation boundary-value solver (`solve_bvp`), written from
+scratch with the area as an unknown parameter.
+"""),
+    code("""
+from scipy.integrate import solve_bvp
+xF, S, z, th = np.array([0.13, 0.87]), 0.1, np.array([0.0, 1.0]), 0.12
+ph, pl, Q = 1.1 * BAR, 0.22 * BAR, m.Q
+
+def f(s, Y, p):              # s = area fraction from the feed end; p[0] = total area
+    N, P = Y[:2], Y[2:]
+    J = Q[:, None] * (ph * N / N.sum(0) - pl * P / P.sum(0))
+    return np.vstack([-p[0] * J, -p[0] * J])
+
+def bc(Ya, Yb, p):
+    return np.array([Ya[0] - xF[0], Ya[1] - xF[1], Yb[2] - S * z[0] - 1e-30,
+                     Yb[3] - S * z[1], Yb[0] + Yb[1] - (1 - th)])
+
+s = np.linspace(0, 1, 50)
+Y0 = np.vstack([np.outer(xF, 1 - th * s), np.outer([0.1, 0.12], 1 - s) + np.outer(S * z, s)])
+bvp = solve_bvp(f, bc, s, Y0, p=[50.0], tol=1e-8, max_nodes=100000)
+r = solve_stage(m, xF, th, 1.1, 0.22, "countercurrent", 1.0, sweep_flow=S,
+                sweep_composition={"N2": 1.0})
+pd.DataFrame({"gasmem (shooting)": [r.area, r.x_ret[0]],
+              "solve_bvp (collocation)": [bvp.p[0], bvp.y[0, -1] / bvp.y[:2, -1].sum()]},
+             index=["area m2 per mol/s", "CO2 in retentate"])
+"""),
+    md(r"""
+Sweeps also work in flowsheets: give a stage `StageSpec(..., sweep_ratio=0.1,
+sweep_composition={"N2": 0.79, "O2": 0.21})`. The sweep then appears as an extra input stream
+(`sweep 2` for stage 2) and is included in the flowsheet mass balance.
+
+## 2. Shell-side pressure drop in a fixed module
+
+Give the module a **packing fraction** φ (fibre cross-section over shell cross-section, typically
+0.4–0.6). The feed then flows along the fibres through the free shell area, treated as laminar flow
+in a channel of hydraulic diameter d<sub>h</sub> = d<sub>o</sub>(1−φ)/φ. Real bundles also lose
+pressure at the ports and baffles; `shell_friction_factor` scales the coefficient to match a
+measured pressure drop.
+
+The case is biogas in a 1 744 m² module (the single-stage design of the README), fed at 1 000 and
+2 000 Nm³/h.
+"""),
+    code("""
+mb  = Membrane(MEMBRANE_PRESETS["Polyimide CO2/CH4, a=35 (Makaruk 2010)"])
+xfb = FEED_PRESETS["biogas, 60% CH4 (Makaruk 2010)"]
+rows = []
+for flow in (1000, 2000):
+    for phi, fric in ((None, 1.0), (0.5, 1.0), (0.6, 1.0), (0.6, 30.0)):
+        mod = HollowFibreModule.for_area(1744, length=1.0, d_inner=200e-6, d_outer=400e-6,
+                                         packing_fraction=phi, shell_friction_factor=fric)
+        r = rate_module(mb, xfb, nm3h_to_mols(flow), 10, 1, mod, "countercurrent", profile=False)
+        rows.append({"feed Nm3/h": flow, "packing": phi or "none", "friction factor": fric,
+                     "shell dp bar": r.extra["shell_dp_bar"], "bore dp bar": r.extra["bore_dp_bar"],
+                     "stage cut": r.theta, "CH4 retentate": r.x_ret[1]})
+pd.DataFrame(rows).set_index(["feed Nm3/h", "packing", "friction factor"])
+"""),
+    md(r"""
+With the bundle alone, the shell-side loss is a few millibar: the feed velocity in the shell is low
+and the free area large. It matters when the measured module pressure drop is much larger
+(ports, baffles, fouling), or at low feed pressure, where every 100 mbar is a large part of the
+driving force. The profile below shows both pressures along the module for the high-friction case.
+"""),
+    code("""
+mod = HollowFibreModule.for_area(1744, packing_fraction=0.6, shell_friction_factor=30.0)
+r = rate_module(mb, xfb, nm3h_to_mols(2000), 10, 1, mod, "countercurrent")
+p = r.profile
+fig, ax = plt.subplots(1, 2, figsize=(10, 3.6))
+ax[0].plot(p["area_fraction"], p["p_feed_bar"], color=gasmem_plot.SERIES[0])
+ax[0].set_ylabel("feed (shell) pressure, bar")
+ax[1].plot(p["area_fraction"], p["p_perm_bar"], color=gasmem_plot.SERIES[1])
+ax[1].set_ylabel("permeate (bore) pressure, bar")
+for a in ax:
+    a.set_xlabel("length fraction from the feed end")
+plt.tight_layout()
+print(mod)
+"""),
+]
+
+# ---------------------------------------------------------------------------
+NOTEBOOKS["11_your_own_data.ipynb"] = [
+    md(r"""
+# 11 · Compare the models with your own data
+
+If you have measurements from a module (laboratory, pilot or plant), you can check the models
+against them in a few lines, and fit permeances to them.
+
+1. Get a blank data sheet with `template`, fill it in (one row per operating point).
+2. `compare` runs the model at every point and pairs each prediction with its measurement.
+3. `fit_permeances` finds the permeances that best reproduce your data.
+
+**Please share what you find.** Comparisons with real modules are the most useful contribution to
+this toolkit, whether the agreement is good or poor. See *Sharing your comparison* at the end.
+"""),
+    code(SETUP),
+    code("""
+from gasmem.userdata import template, read, compare, fit_permeances
+template(["O2", "N2"])
+"""),
+    md(r"""
+| Column | Meaning |
+|---|---|
+| `point` | your label for the operating point |
+| `pattern` | optional per row; otherwise the `pattern` argument |
+| `p_feed_bar`, `p_perm_bar` | absolute pressures, bar |
+| `feed_flow_mol_s` (or `feed_flow_Nm3h`) | needed to compare areas, or to rate a module |
+| `x_feed_<comp>` | feed mole fractions |
+| `stage_cut` | measured stage cut: the model runs at it (**design mode**) |
+| `area_m2` | membrane area: compared in design mode, or used to predict the stage cut (**rating mode**) |
+| `y_perm_<comp>`, `x_ret_<comp>` | measured permeate and retentate mole fractions |
+
+Use fractions, not percent, and leave cells empty when a quantity was not measured.
+
+## Worked example
+
+As an example, the measured points of Feng et al. (1999), Figs. 4–5 (air separation, bore-side
+feed, counter-current, 7.83 bar feed, 0.93 bar permeate) are put into the sheet format. These are
+digitised values shipped with the toolkit; replace them with your own file, e.g.
+`data = read("my_module.csv")`.
+"""),
+    code("""
+from gasmem.datasets import load
+feng = load("Feng1999").query("figure in ['Fig. 4', 'Fig. 5'] and "
+                              "series == 'bore-side feed, countercurrent'")
+rows = []
+for _, p in feng.iterrows():
+    row = {"point": f"{p.figure}, θ={p.x:.3f}", "p_feed_bar": 7.828, "p_perm_bar": 0.933,
+           "x_feed_O2": 0.205, "x_feed_N2": 0.795, "stage_cut": p.x}
+    row["x_ret_N2" if "N2" in p.quantity else "y_perm_O2"] = p.y / 100
+    rows.append(row)
+data = pd.DataFrame(rows)
+data.to_csv("example_user_data.csv", index=False)      # this is what your file would look like
+read("example_user_data.csv").head()
+"""),
+    md("## Compare"),
+    code("""
+m = Membrane(MEMBRANE_PRESETS["Asymmetric hollow fibre air (Feng 1999)"])
+cmp = compare(m, "example_user_data.csv", pattern="countercurrent")
+display(cmp.summary())
+cmp.plot();
+"""),
+    md(r"""
+`cmp.table` holds every pair (point, quantity, measured, predicted, error) for your own plots, and
+`cmp.failed` lists any point the model could not run, with the reason.
+
+## Fit permeances
+
+Compositions depend only on permeance *ratios*, so without area data the fit returns the
+selectivity, with the fastest gas held at its starting value. Here the fit starts from a poor guess,
+α = 3, to show that the data, not the preset, fix the answer.
+"""),
+    code("""
+start = Membrane({"O2": 9.2, "N2": 9.2 / 3})
+fitted, cmp_fit, info = fit_permeances(start, "example_user_data.csv", pattern="countercurrent")
+print(fitted)
+print("fitted O2/N2 selectivity:", round(fitted.selectivity("O2", "N2"), 3),
+      " (preset from Feng's paper:", round(m.selectivity("O2", "N2"), 3), ")")
+print(info["note"])
+print("95 % range:", info.get("permeance_95pct_range_GPU"))
+cmp_fit.summary()
+"""),
+    md(r"""
+If your sheet has areas and feed flows, both permeances are fitted, and the result is the effective
+permeance of your module (which includes any effects the model leaves out). Try other flow patterns
+too: the pattern that fits best tells you how your module behaves (Pan 1986 found cross-flow for
+high-flux asymmetric fibres).
+
+## Sharing your comparison
+
+Open an issue on GitHub (https://github.com/SinaGhanbarii/gasmem/issues) with:
+
+* the data sheet (CSV), or the summary table if the data are confidential;
+* the membrane (or permeances), module type and flow pattern you assumed;
+* `cmp.summary()` and the parity plot;
+* where the data come from (paper, own measurements) and whether it may be added to the toolkit's
+  validation set, with credit.
+
+Poor agreement is just as useful as good agreement: it shows where the models need work.
+"""),
+]
+
+
 def main(run=False, only=None):
     NB.mkdir(exist_ok=True)
     for name, cells in NOTEBOOKS.items():
         if only and not any(name.startswith(o) for o in only):
             continue
         nb = nbf.v4.new_notebook()
-        nb.cells = cells
+        nb.cells = [md(BADGE.format(name=name))] + cells
         nb.metadata["kernelspec"] = {"name": "python3", "display_name": "Python 3",
                                      "language": "python"}
         path = NB / name

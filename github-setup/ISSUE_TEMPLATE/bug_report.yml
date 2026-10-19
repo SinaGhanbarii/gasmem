@@ -1,0 +1,27 @@
+name: Bug report
+description: Something does not work or gives a wrong result
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: code
+    attributes:
+      label: Short script that reproduces it
+      render: python
+    validations:
+      required: true
+  - type: textarea
+    id: error
+    attributes:
+      label: Full error message
+      render: text
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: Output of python -c "import gasmem, numpy, scipy; print(gasmem.__version__, numpy.__version__, scipy.__version__)"

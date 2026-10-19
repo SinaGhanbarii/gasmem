@@ -1,0 +1,54 @@
+name: Share validation data
+description: Compare gasmem with your own measurements or with published data
+title: "[data] "
+labels: ["validation data"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you! Comparisons with real modules are the most useful contribution to gasmem,
+        whether the agreement is good or poor. Notebook 11 (`11_your_own_data.ipynb`) shows how
+        to prepare the data sheet and run the comparison.
+  - type: input
+    id: source
+    attributes:
+      label: Source of the data
+      description: Your own measurements (lab, pilot, plant), or a paper with DOI and figure/table.
+    validations:
+      required: true
+  - type: textarea
+    id: system
+    attributes:
+      label: Separation, membrane and module
+      description: Gases, membrane material or product, module type (hollow fibre, spiral wound...), feed side (shell or bore), area, temperature.
+    validations:
+      required: true
+  - type: textarea
+    id: model
+    attributes:
+      label: Model settings
+      description: Permeances (GPU) and flow pattern you used, and whether you fitted the permeances.
+    validations:
+      required: true
+  - type: textarea
+    id: results
+    attributes:
+      label: Comparison
+      description: Paste the output of `compare(...).summary()` and drag in the parity plot.
+    validations:
+      required: true
+  - type: textarea
+    id: data
+    attributes:
+      label: Data sheet
+      description: Attach the CSV (drag it here). If the data are confidential, say so and share the summary only.
+  - type: dropdown
+    id: permission
+    attributes:
+      label: May these data be added to the gasmem validation set?
+      options:
+        - "Yes, with credit to me / my organisation"
+        - "Yes, they are already published (cited above)"
+        - "No, for discussion only"
+    validations:
+      required: true

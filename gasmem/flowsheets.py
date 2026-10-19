@@ -35,11 +35,18 @@ from .stagecut import solve_stage
 
 @dataclass
 class StageSpec:
-    """Operating specification of one stage (pressures in bar)."""
+    """Operating specification of one stage (pressures in bar).
+
+    sweep_ratio : permeate sweep flow as a fraction of this stage's feed flow
+                  (co-current and counter-current stages only)
+    sweep_composition : e.g. {'N2': 0.79, 'O2': 0.21} for an air sweep
+    """
     theta: float
     p_high: float
     p_low: float
     pattern: str = "countercurrent"
+    sweep_ratio: float = 0.0
+    sweep_composition: dict | None = None
 
 
 @dataclass
@@ -78,7 +85,9 @@ class FlowsheetResult:
 
     def mass_balance_error(self) -> float:
         out = sum(self.streams[s] for s in self.products.values())
-        return float(np.max(np.abs(out - self.fresh_feed)) / self.fresh_feed.sum())
+        inp = self.fresh_feed + sum((v for k, v in self.streams.items()
+                                     if k.startswith("sweep")), np.zeros_like(out))
+        return float(np.max(np.abs(out - inp)) / self.fresh_feed.sum())
 
     def stream_table(self) -> pd.DataFrame:
         rows = []
@@ -109,7 +118,8 @@ def _run_stage(membrane: Membrane, flows: np.ndarray, spec: StageSpec, cache=Non
     F = flows.sum()
     guess = cache.get(key) if cache is not None else None
     r = solve_stage(membrane, flows / F, spec.theta, spec.p_high, spec.p_low, spec.pattern, F,
-                    x_ret_guess=guess)
+                    x_ret_guess=guess, sweep_flow=spec.sweep_ratio * F,
+                    sweep_composition=spec.sweep_composition)
     if cache is not None:
         cache[key] = r.x_ret
     perm = r.permeate_flow * r.y_perm
@@ -155,6 +165,9 @@ def _iterate(step, n, F, tol=1e-9, maxit=300, n_tear=1):
 
 
 def _finish(name, membrane, fresh, out, it, ok, products, ca):
+    for k, st in out["stages"].items():          # sweep gas enters as an extra input
+        if st.sweep_flow > 0:
+            out["streams"][f"sweep {k.split()[-1]}"] = st.sweep_flow * st.sweep_x
     res = FlowsheetResult(name, membrane.components, fresh, out["stages"], out["streams"],
                           products, out["power"], it, ok)
     vac = sum(v for k, v in res.power_kW.items() if k.startswith("vacuum"))
@@ -241,7 +254,8 @@ def three_stage(membrane: Membrane, x_feed, feed_flow: float, s1: StageSpec, s2:
     ea, ca = ea or EnergyAssumptions(), ca or CostAssumptions()
     names, n = membrane.components, membrane.n
     fresh = membrane.vector(x_feed) * feed_flow
-    s3 = StageSpec(s3.theta, s1.p_low, s3.p_low, s3.pattern)
+    s3 = StageSpec(s3.theta, s1.p_low, s3.p_low, s3.pattern, s3.sweep_ratio,
+                   s3.sweep_composition)
     if s3.p_low >= s3.p_high:
         raise ValueError("stage 3 needs s1.p_low > s3.p_low")
     if s2.p_high > s1.p_high:

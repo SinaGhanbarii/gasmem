@@ -19,6 +19,15 @@ Counter-current (design mode, theta given)
     the feed composition is recovered.  Binary cases use a bracketed scalar
     root (Brent); multicomponent cases use log-ratio unknowns and a Newton-type
     solver started from the cross-flow solution.
+
+Permeate sweep (optional, both patterns)
+    A sweep gas of flow S and composition z enters the permeate channel at its
+    otherwise closed end (feed end for co-current, retentate end for
+    counter-current).  The permeate side then starts at P = S z instead of 0,
+    so no seed element is needed.  The stage cut keeps its meaning as the
+    fraction of the feed that crosses the membrane, theta = 1 - L_R/F; the
+    permeate outlet carries theta F + S.  Components of the sweep that are
+    absent from the feed may permeate backwards into the retentate.
 """
 from __future__ import annotations
 
@@ -44,6 +53,26 @@ def _perm_comp(N, P, Q, ph, pl, F):
     return x, y / ys
 
 
+def _sweep_vector(membrane, sweep_flow, sweep_composition, F):
+    """Sweep component flows (mol/s) or None."""
+    if not sweep_flow:
+        return None
+    if sweep_flow < 0:
+        raise ValueError("sweep_flow must be non-negative")
+    if sweep_composition is None:
+        raise ValueError("give sweep_composition with sweep_flow, e.g. {'N2': 1.0}")
+    return sweep_flow * membrane.vector(sweep_composition)
+
+
+def _start(N, Q, ph, pl, dL, sign, sweep):
+    """Start of the integration at the permeate inlet: the analytic seed for a
+    closed end, or the sweep flows.  Returns (state0, dL used)."""
+    if sweep is None:
+        N0, P0, A0 = _seed(N, Q, ph, pl, dL, sign)
+        return np.concatenate([N0, P0, [A0]]), dL
+    return np.concatenate([N, sweep, [0.0]]), 0.0
+
+
 def _seed(N, Q, ph, pl, dL, sign):
     """Analytic first element next to the closed permeate end.
 
@@ -60,10 +89,15 @@ def _seed(N, Q, ph, pl, dL, sign):
 # co-current
 # ---------------------------------------------------------------------------
 def cocurrent(membrane: Membrane, x_feed, theta: float, p_high: float, p_low: float,
-              feed_flow: float = 1.0, profile: bool = True, rtol: float = 1e-9) -> StageResult:
-    """Co-current plug flow at a specified stage cut (pressures in bar)."""
+              feed_flow: float = 1.0, profile: bool = True, rtol: float = 1e-9,
+              sweep_flow: float = 0.0, sweep_composition=None) -> StageResult:
+    """Co-current plug flow at a specified stage cut (pressures in bar).
+
+    sweep_flow (mol/s) and sweep_composition (mapping) add a permeate sweep
+    entering at the feed end."""
     xF, ph, pl = check_inputs(membrane, x_feed, theta, p_high, p_low)
     Q, n, F = membrane.Q, membrane.n, feed_flow
+    sweep = _sweep_vector(membrane, sweep_flow, sweep_composition, F)
     jscale = Q.max() * ph
 
     def fluxes(s):
@@ -80,9 +114,7 @@ def cocurrent(membrane: Membrane, x_feed, theta: float, p_high: float, p_low: fl
         return fluxes(s)[1] - 1e-9 * jscale
     no_flux.terminal, no_flux.direction = True, -1
 
-    dL = _SEED * theta * F
-    N0, P0, A0 = _seed(F * xF, Q, ph, pl, dL, -1.0)
-    s0 = np.concatenate([N0, P0, [A0]])
+    s0, dL = _start(F * xF, Q, ph, pl, _SEED * theta * F, -1.0, sweep)
     sol = solve_ivp(rhs, (F - dL, (1 - theta) * F), s0, method=_METHOD, rtol=rtol,
                     atol=1e-14 * F, events=no_flux, dense_output=profile)
     if sol.status == 1:
@@ -104,13 +136,15 @@ def cocurrent(membrane: Membrane, x_feed, theta: float, p_high: float, p_low: fl
                 "x": np.array(xs).T, "y": np.array(ys).T,
                 "permeate_flow": S[n:2 * n].sum(axis=0)}
     return StageResult("cocurrent", membrane.components, theta, F, xF, x_ret, y_perm,
-                       area, p_high, p_low, profile=prof)
+                       area, p_high, p_low, profile=prof,
+                       sweep_flow=float(sweep_flow or 0.0),
+                       sweep_x=None if sweep is None else sweep / sweep.sum())
 
 
 # ---------------------------------------------------------------------------
 # counter-current
 # ---------------------------------------------------------------------------
-def _cc_shoot(xR, Q, ph, pl, F, theta, n, dense=False, rtol=1e-9):
+def _cc_shoot(xR, Q, ph, pl, F, theta, n, dense=False, rtol=1e-9, sweep=None, check=None):
     """Integrate from the closed (retentate) end back to the feed end."""
     jscale = Q.max() * ph
 
@@ -128,16 +162,20 @@ def _cc_shoot(xR, Q, ph, pl, F, theta, n, dense=False, rtol=1e-9):
         return fluxes(s)[1] - 1e-9 * jscale
     no_flux.terminal, no_flux.direction = True, -1
 
+    chk = slice(None) if check is None else check
+
     def depleted(L, s):              # a feed-side flow would turn negative:
-        return np.min(s[:n])         # the guessed x_R is unphysical
+        return np.min(s[:n][chk])    # the guessed x_R is unphysical
     depleted.terminal, depleted.direction = True, -1
 
     LR = (1 - theta) * F
-    dL = _SEED * theta * F
-    N0, P0, A0 = _seed(LR * xR, Q, ph, pl, dL, +1.0)
-    s0 = np.concatenate([N0, P0, [A0]])
+    s0, dL = _start(LR * xR, Q, ph, pl, _SEED * theta * F, +1.0, sweep)
+    opts = {"atol": 1e-300 * F}
+    if sweep is not None:      # area starts at exactly 0: own tolerance, explicit first step
+        opts = {"atol": np.r_[np.full(2 * n, 1e-300 * F), 1e-12],
+                "first_step": 1e-8 * (F - LR)}
     sol = solve_ivp(rhs, (LR + dL, F), s0, method=_METHOD, rtol=rtol,
-                    atol=1e-300 * F, events=(no_flux, depleted), dense_output=dense)
+                    events=(no_flux, depleted), dense_output=dense, **opts)
     ok = sol.success and sol.status == 0
     sol.depleted = (int(np.argmin(sol.y[:n, -1]))
                     if sol.status == 1 and sol.t_events[1].size else None)
@@ -175,7 +213,7 @@ def _bracket_increasing(g, t0, step=1.0, maxit=80):
     raise InfeasibleError("counter-current: could not bracket the retentate composition")
 
 
-def _cc_multicomponent(membrane, xF, theta, p_high, p_low, F, guess, rtol):
+def _cc_multicomponent(membrane, xF, theta, p_high, p_low, F, guess, rtol, sweep=None):
     """Shooting for n > 2: unknowns u_i = ln(x_R,i / x_R,ref), where ref is the
     most abundant retentate species of the guess.  If a direct solve fails
     (typically at very high stage cut, when a fast gas is stripped to trace
@@ -184,22 +222,31 @@ def _cc_multicomponent(membrane, xF, theta, p_high, p_low, F, guess, rtol):
     from .properties import BAR
     ph, pl = p_high * BAR, p_low * BAR
     floor = 1e-300
+    # a species that enters only with the sweep must reach exactly zero at the
+    # feed end; it may cross zero during the shooting without ending it
+    check = (xF > 1e-14) if sweep is not None else None
 
     def solve_at(th, gx):
         ref = int(np.argmax(gx))
         idx = [i for i in range(n) if i != ref]
 
         def to_x(u):
-            w = np.ones(n)
-            w[idx] = np.exp(np.clip(u, -690, 690))
+            v = np.zeros(n)
+            v[idx] = np.clip(u, -690, 690)
+            w = np.exp(v - v.max())          # overflow-safe normalisation
             return w / w.sum()
 
         def resid(u):
-            sol, ok, _ = _cc_shoot(to_x(u), Q, ph, pl, F, th, n, rtol=rtol)
+            sol, ok, _ = _cc_shoot(to_x(u), Q, ph, pl, F, th, n, rtol=rtol, sweep=sweep,
+                                   check=check)
             if not ok:
                 return np.full(n - 1, 1e3)
             Nf = sol.y[:n, -1] / F
-            return Nf[idx] / np.maximum(xF[idx], floor) - 1.0
+            # a component absent from the feed (it can enter from the sweep)
+            # is matched in absolute terms
+            out = np.where(xF[idx] > 1e-14, Nf[idx] / np.maximum(xF[idx], floor) - 1.0,
+                           (Nf[idx] - xF[idx]) * 1e3)
+            return out if np.all(np.isfinite(out)) else np.full(n - 1, 1e3)
 
         u0 = np.log(np.maximum(gx[idx], floor) / gx[ref])
         best = None
@@ -219,6 +266,8 @@ def _cc_multicomponent(membrane, xF, theta, p_high, p_low, F, guess, rtol):
     # continuation in stage cut from a comfortable starting point
     th_list = np.linspace(min(0.3, 0.5 * theta), theta, 8)
     gx = cross_flow(membrane, xF, th_list[0], p_high, p_low, F, profile=False).x_ret
+    if sweep is not None:      # keep every species present in the starting guess
+        gx = 0.98 * gx / gx.sum() + 0.02 * sweep / sweep.sum()
     for th in th_list:
         gx, err = solve_at(th, gx)
         if err > 1e-6:
@@ -226,18 +275,19 @@ def _cc_multicomponent(membrane, xF, theta, p_high, p_low, F, guess, rtol):
     return gx
 
 
-def _cc_backward(membrane, xF, theta, ph, pl, F, guess, rtol, p_high, p_low):
+def _cc_backward(membrane, xF, theta, ph, pl, F, guess, rtol, p_high, p_low, sweep=None):
     """Shooting from the closed (retentate) end; returns x_R."""
     Q, n = membrane.Q, membrane.n
-    if n > 2:
-        return _cc_multicomponent(membrane, xF, theta, p_high, p_low, F, guess, rtol)
+    if n > 2 or (sweep is not None and np.any(xF <= 0)):
+        return _cc_multicomponent(membrane, xF, theta, p_high, p_low, F, guess, rtol, sweep)
 
     def g(t):          # t = logit of x_R[0]
         with np.errstate(over="ignore"):
             x0 = 1.0 / (1.0 + np.exp(-t))
         if x0 <= 1e-290 or x0 >= 1 - 1e-15:
             return np.nan                     # outside double precision
-        sol, ok, _ = _cc_shoot(np.array([x0, 1 - x0]), Q, ph, pl, F, theta, n, rtol=rtol)
+        sol, ok, _ = _cc_shoot(np.array([x0, 1 - x0]), Q, ph, pl, F, theta, n, rtol=rtol,
+                               sweep=sweep)
         if sol.depleted is not None:
             # component 0 exhausted -> x_R[0] too small (residual -x_F0);
             # component 1 exhausted -> x_R[0] too large (residual 1-x_F0)
@@ -249,6 +299,9 @@ def _cc_backward(membrane, xF, theta, ph, pl, F, guess, rtol, p_high, p_low):
     fast = int(np.argmax(Q))
     t_lim = np.log(1e-280) * (1 if fast == 0 else -1)   # fast gas at 1e-280
     if (g(t_lim) > 0) if fast == 0 else (g(t_lim) < 0):
+        if sweep is not None:
+            raise InfeasibleError("counter-current with sweep: the fast gas is stripped "
+                                  "completely; reduce the stage cut or the sweep")
         raise _Stripped()
     t0 = np.log(max(guess[0], 1e-300) / max(guess[1], 1e-300))
     a, b, ga, gb = _bracket_increasing(g, t0, step=2.0)
@@ -256,7 +309,7 @@ def _cc_backward(membrane, xF, theta, ph, pl, F, guess, rtol, p_high, p_low):
     x0 = 1.0 / (1.0 + np.exp(-t))
     xR = np.array([x0, 1 - x0])
     # reject a "root" sitting on the depletion discontinuity
-    sol, ok, _ = _cc_shoot(xR, Q, ph, pl, F, theta, n, rtol=rtol)
+    sol, ok, _ = _cc_shoot(xR, Q, ph, pl, F, theta, n, rtol=rtol, sweep=sweep)
     if not ok or abs(sol.y[0, -1] / F - xF[0]) > 1e-7:
         raise InfeasibleError("backward shooting did not converge")
     return xR
@@ -304,23 +357,31 @@ def _cc_stripped_binary(membrane, xF, theta, ph, pl, F, dense):
 
 def countercurrent(membrane: Membrane, x_feed, theta: float, p_high: float, p_low: float,
                    feed_flow: float = 1.0, profile: bool = True, rtol: float = 1e-9,
-                   x_ret_guess=None) -> StageResult:
+                   x_ret_guess=None, sweep_flow: float = 0.0,
+                   sweep_composition=None) -> StageResult:
     """Counter-current plug flow at a specified stage cut (pressures in bar).
 
     x_ret_guess : optional starting retentate composition for the shooting
                   (e.g. from a nearby solution); default is the cross-flow result.
+    sweep_flow, sweep_composition : permeate sweep (mol/s, mapping) entering at
+                  the retentate end and leaving with the permeate at the feed end.
     """
     xF, ph, pl = check_inputs(membrane, x_feed, theta, p_high, p_low)
     Q, n, F = membrane.Q, membrane.n, feed_flow
+    sweep = _sweep_vector(membrane, sweep_flow, sweep_composition, F)
     if x_ret_guess is not None:
         guess = np.asarray(x_ret_guess, float)
     else:
         guess = cross_flow(membrane, xF, theta, p_high, p_low, F, profile=False).x_ret
+    if sweep is not None:      # keep every species present in the starting guess
+        guess = 0.98 * guess / guess.sum() + 0.02 * sweep / sweep.sum()
 
     info = {"shooting": "backward"}
     try:
-        xR = _cc_backward(membrane, xF, theta, ph, pl, F, guess, rtol, p_high, p_low)
-        sol, ok, fluxes = _cc_shoot(xR, Q, ph, pl, F, theta, n, dense=profile, rtol=rtol)
+        xR = _cc_backward(membrane, xF, theta, ph, pl, F, guess, rtol, p_high, p_low, sweep)
+        sol, ok, fluxes = _cc_shoot(xR, Q, ph, pl, F, theta, n, dense=profile, rtol=rtol,
+                                    sweep=sweep,
+                                    check=(xF > 1e-14) if sweep is not None else None)
         if not ok:
             raise InfeasibleError("final backward shot failed")
         P_end, area = sol.y[n:2 * n, -1], float(sol.y[2 * n, -1])
@@ -336,7 +397,7 @@ def countercurrent(membrane: Membrane, x_feed, theta: float, p_high: float, p_lo
     if profile:
         # report in the flow direction of the feed (area fraction 0 = feed end)
         if method == "backward":
-            L = np.linspace(F, (1 - theta) * F + _SEED * theta * F, 200)
+            L = np.linspace(F, sol.t[0], 200)
             S = sol.sol(L)
             frac = 1.0 - S[2 * n] / area
         else:
@@ -349,4 +410,6 @@ def countercurrent(membrane: Membrane, x_feed, theta: float, p_high: float, p_lo
                 "x": np.array(xs).T, "y": np.array(ys).T,
                 "permeate_flow": S[n:2 * n].sum(axis=0)}
     return StageResult("countercurrent", membrane.components, theta, F, xF, x_ret, y_perm,
-                       area, p_high, p_low, profile=prof, extra=info)
+                       area, p_high, p_low, profile=prof, extra=info,
+                       sweep_flow=float(sweep_flow or 0.0),
+                       sweep_x=None if sweep is None else sweep / sweep.sum())
