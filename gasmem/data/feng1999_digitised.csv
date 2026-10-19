@@ -1,0 +1,160 @@
+source,figure,quantity,series,x_name,x,y,px,py
+Feng1999,Fig. 4,residue N2 %,"bore-side feed, countercurrent",stage cut,0.84794,99.40176,657.3,44.9
+Feng1999,Fig. 4,residue N2 %,"bore-side feed, countercurrent",stage cut,0.7826,99.35588,601.2,47.5
+Feng1999,Fig. 4,residue N2 %,"bore-side feed, countercurrent",stage cut,0.70526,98.79294,534.8,79.4
+Feng1999,Fig. 4,residue N2 %,"bore-side feed, countercurrent",stage cut,0.61313,97.42706,455.7,156.8
+Feng1999,Fig. 4,residue N2 %,"bore-side feed, countercurrent",stage cut,0.5981,97.22412,442.8,168.3
+Feng1999,Fig. 4,residue N2 %,"bore-side feed, countercurrent",stage cut,0.52088,95.44706,376.5,269.0
+Feng1999,Fig. 4,residue N2 %,"bore-side feed, countercurrent",stage cut,0.47639,94.37941,338.3,329.5
+Feng1999,Fig. 4,residue N2 %,"bore-side feed, countercurrent",stage cut,0.45717,93.88882,321.8,357.3
+Feng1999,Fig. 4,residue N2 %,"bore-side feed, countercurrent",stage cut,0.3923,92.11353,266.1,457.9
+Feng1999,Fig. 4,residue N2 %,"bore-side feed, countercurrent",stage cut,0.35689,91.00353,235.7,520.8
+Feng1999,Fig. 4,residue N2 %,"bore-side feed, countercurrent",stage cut,0.31496,89.89529,199.7,583.6
+Feng1999,Fig. 4,residue N2 %,"bore-side feed, countercurrent",stage cut,0.28689,89.17176,175.6,624.6
+Feng1999,Fig. 4,residue N2 %,"shell-side feed, countercurrent",stage cut,0.81591,99.50588,629.8,39.0
+Feng1999,Fig. 4,residue N2 %,"shell-side feed, countercurrent",stage cut,0.67567,98.48765,509.4,96.7
+Feng1999,Fig. 4,residue N2 %,"shell-side feed, countercurrent",stage cut,0.58156,96.74941,428.6,195.2
+Feng1999,Fig. 4,residue N2 %,"shell-side feed, countercurrent",stage cut,0.51052,95.09235,367.6,289.1
+Feng1999,Fig. 4,residue N2 %,"shell-side feed, countercurrent",stage cut,0.44622,93.32588,312.4,389.2
+Feng1999,Fig. 4,residue N2 %,"shell-side feed, countercurrent",stage cut,0.38601,91.42882,260.7,496.7
+Feng1999,Fig. 4,residue N2 %,"shell-side feed, countercurrent",stage cut,0.33918,90.25,220.5,563.5
+Feng1999,Fig. 4,residue N2 %,"shell-side feed, countercurrent",stage cut,0.29493,88.86118,182.5,642.2
+Feng1999,Fig. 4,residue N2 %,"bore-side feed, cocurrent",stage cut,0.84747,96.52353,656.9,208.0
+Feng1999,Fig. 4,residue N2 %,"bore-side feed, cocurrent",stage cut,0.7692,95.90412,589.7,243.1
+Feng1999,Fig. 4,residue N2 %,"bore-side feed, cocurrent",stage cut,0.673,95.10471,507.1,288.4
+Feng1999,Fig. 4,residue N2 %,"bore-side feed, cocurrent",stage cut,0.58156,94.22059,428.6,338.5
+Feng1999,Fig. 4,residue N2 %,"bore-side feed, cocurrent",stage cut,0.52845,93.34706,383.0,388.0
+Feng1999,Fig. 4,residue N2 %,"bore-side feed, cocurrent",stage cut,0.46719,92.39941,330.4,441.7
+Feng1999,Fig. 4,residue N2 %,"bore-side feed, cocurrent",stage cut,0.43621,91.71294,303.8,480.6
+Feng1999,Fig. 4,residue N2 %,"bore-side feed, cocurrent",stage cut,0.38146,90.58,256.8,544.8
+Feng1999,Fig. 4,residue N2 %,"bore-side feed, cocurrent",stage cut,0.35363,89.94824,232.9,580.6
+Feng1999,Fig. 4,residue N2 %,"bore-side feed, cocurrent",stage cut,0.29912,88.61588,186.1,656.1
+Feng1999,Fig. 4,residue N2 %,"shell-side feed, cocurrent",stage cut,0.81614,95.88824,630.0,244.0
+Feng1999,Fig. 4,residue N2 %,"shell-side feed, cocurrent",stage cut,0.69734,95.09412,528.0,289.0
+Feng1999,Fig. 4,residue N2 %,"shell-side feed, cocurrent",stage cut,0.60463,94.08824,448.4,346.0
+Feng1999,Fig. 4,residue N2 %,"shell-side feed, cocurrent",stage cut,0.56607,93.60118,415.3,373.6
+Feng1999,Fig. 4,residue N2 %,"shell-side feed, cocurrent",stage cut,0.51867,92.92882,374.6,411.7
+Feng1999,Fig. 4,residue N2 %,"shell-side feed, cocurrent",stage cut,0.38368,90.36471,258.7,557.0
+Feng1999,Fig. 4,residue N2 %,"shell-side feed, cocurrent",stage cut,0.31193,88.65824,197.1,653.7
+Feng1999,Fig. 4,residue N2 %,"shell-side feed, cocurrent",stage cut,0.28235,87.75647,171.7,704.8
+Feng1999,Fig. 4,residue N2 %,"shell-side feed, cocurrent",stage cut,0.25195,86.93941,145.6,751.1
+Feng1999,Fig. 5,permeate O2 %,"bore-side feed, countercurrent",stage cut,0.28517,43.75147,157.0,54.4
+Feng1999,Fig. 5,permeate O2 %,"bore-side feed, countercurrent",stage cut,0.312,42.90931,180.0,83.0
+Feng1999,Fig. 5,permeate O2 %,"bore-side feed, countercurrent",stage cut,0.35493,41.59011,216.8,127.8
+Feng1999,Fig. 5,permeate O2 %,"bore-side feed, countercurrent",stage cut,0.38912,40.4417,246.1,166.8
+Feng1999,Fig. 5,permeate O2 %,"bore-side feed, countercurrent",stage cut,0.45527,38.11543,302.8,245.8
+Feng1999,Fig. 5,permeate O2 %,"bore-side feed, countercurrent",stage cut,0.47417,37.02002,319.0,283.0
+Feng1999,Fig. 5,permeate O2 %,"bore-side feed, countercurrent",stage cut,0.51955,35.19729,357.9,344.9
+Feng1999,Fig. 5,permeate O2 %,"bore-side feed, countercurrent",stage cut,0.59958,32.05536,426.5,451.6
+Feng1999,Fig. 5,permeate O2 %,"bore-side feed, countercurrent",stage cut,0.61475,31.64605,439.5,465.5
+Feng1999,Fig. 5,permeate O2 %,"bore-side feed, countercurrent",stage cut,0.70552,28.31567,517.3,578.6
+Feng1999,Fig. 5,permeate O2 %,"bore-side feed, countercurrent",stage cut,0.78333,25.97762,584.0,658.0
+Feng1999,Fig. 5,permeate O2 %,"bore-side feed, countercurrent",stage cut,0.84727,24.202,638.8,718.3
+Feng1999,Fig. 5,permeate O2 %,"shell-side feed, countercurrent",stage cut,0.29415,42.67962,164.7,90.8
+Feng1999,Fig. 5,permeate O2 %,"shell-side feed, countercurrent",stage cut,0.33743,41.37809,201.8,135.0
+Feng1999,Fig. 5,permeate O2 %,"shell-side feed, countercurrent",stage cut,0.38492,39.97644,242.5,182.6
+Feng1999,Fig. 5,permeate O2 %,"shell-side feed, countercurrent",stage cut,0.4457,37.80624,294.6,256.3
+Feng1999,Fig. 5,permeate O2 %,"shell-side feed, countercurrent",stage cut,0.51068,35.43875,350.3,336.7
+Feng1999,Fig. 5,permeate O2 %,"shell-side feed, countercurrent",stage cut,0.58197,32.8828,411.4,423.5
+Feng1999,Fig. 5,permeate O2 %,"shell-side feed, countercurrent",stage cut,0.67787,29.45819,493.6,539.8
+Feng1999,Fig. 5,permeate O2 %,"shell-side feed, countercurrent",stage cut,0.81518,25.10012,611.3,687.8
+Feng1999,Fig. 5,permeate O2 %,"bore-side feed, cocurrent",stage cut,0.29613,41.56655,166.4,128.6
+Feng1999,Fig. 5,permeate O2 %,"bore-side feed, cocurrent",stage cut,0.3561,39.57597,217.8,196.2
+Feng1999,Fig. 5,permeate O2 %,"bore-side feed, cocurrent",stage cut,0.38363,38.50707,241.4,232.5
+Feng1999,Fig. 5,permeate O2 %,"bore-side feed, cocurrent",stage cut,0.43835,36.32509,288.3,306.6
+Feng1999,Fig. 5,permeate O2 %,"bore-side feed, cocurrent",stage cut,0.46833,34.98822,314.0,352.0
+Feng1999,Fig. 5,permeate O2 %,"bore-side feed, cocurrent",stage cut,0.53063,32.95347,367.4,421.1
+Feng1999,Fig. 5,permeate O2 %,"bore-side feed, cocurrent",stage cut,0.58173,30.83039,411.2,493.2
+Feng1999,Fig. 5,permeate O2 %,"bore-side feed, cocurrent",stage cut,0.67297,28.39812,489.4,575.8
+Feng1999,Fig. 5,permeate O2 %,"bore-side feed, cocurrent",stage cut,0.76677,25.37102,569.8,678.6
+Feng1999,Fig. 5,permeate O2 %,"bore-side feed, cocurrent",stage cut,0.84785,23.6278,639.3,737.8
+Feng1999,Fig. 5,permeate O2 %,"shell-side feed, cocurrent",stage cut,0.25227,42.79152,128.8,87.0
+Feng1999,Fig. 5,permeate O2 %,"shell-side feed, cocurrent",stage cut,0.28225,41.63133,154.5,126.4
+Feng1999,Fig. 5,permeate O2 %,"shell-side feed, cocurrent",stage cut,0.31212,40.28269,180.1,172.2
+Feng1999,Fig. 5,permeate O2 %,"shell-side feed, cocurrent",stage cut,0.38223,37.67962,240.2,260.6
+Feng1999,Fig. 5,permeate O2 %,"shell-side feed, cocurrent",stage cut,0.51873,32.83569,357.2,425.1
+Feng1999,Fig. 5,permeate O2 %,"shell-side feed, cocurrent",stage cut,0.56505,31.18963,396.9,481.0
+Feng1999,Fig. 5,permeate O2 %,"shell-side feed, cocurrent",stage cut,0.60448,30.05595,430.7,519.5
+Feng1999,Fig. 5,permeate O2 %,"shell-side feed, cocurrent",stage cut,0.69653,27.11425,509.6,619.4
+Feng1999,Fig. 5,permeate O2 %,"shell-side feed, cocurrent",stage cut,0.81542,24.17256,611.5,719.3
+Feng1999,Fig. 13,N2 recovery %,23 C,residue N2 %,89.146,79.73003,170.3,58.6
+Feng1999,Fig. 13,N2 recovery %,23 C,residue N2 %,89.89,77.63636,207.5,68.1
+Feng1999,Fig. 13,N2 recovery %,23 C,residue N2 %,90.98,73.69146,262.0,86.0
+Feng1999,Fig. 13,N2 recovery %,23 C,residue N2 %,92.08,71.17906,317.0,97.4
+Feng1999,Fig. 13,N2 recovery %,23 C,residue N2 %,93.84,63.73003,405.0,131.2
+Feng1999,Fig. 13,N2 recovery %,23 C,residue N2 %,94.342,61.83471,430.1,139.8
+Feng1999,Fig. 13,N2 recovery %,23 C,residue N2 %,95.41,57.62534,483.5,158.9
+Feng1999,Fig. 13,N2 recovery %,23 C,residue N2 %,97.212,48.89807,573.6,198.5
+Feng1999,Fig. 13,N2 recovery %,23 C,residue N2 %,97.41,47.44353,583.5,205.1
+Feng1999,Fig. 13,N2 recovery %,23 C,residue N2 %,98.8,36.2259,653.0,256.0
+Feng1999,Fig. 13,N2 recovery %,23 C,residue N2 %,99.332,27.12397,679.6,297.3
+Feng1999,Fig. 13,N2 recovery %,23 C,residue N2 %,99.46,19.2562,686.0,333.0
+Feng1999,Fig. 13,N2 recovery %,45 C,residue N2 %,91.522,67.56474,289.1,113.8
+Feng1999,Fig. 13,N2 recovery %,45 C,residue N2 %,92.4,64.65565,333.0,127.0
+Feng1999,Fig. 13,N2 recovery %,45 C,residue N2 %,93.424,60.75482,384.2,144.7
+Feng1999,Fig. 13,N2 recovery %,45 C,residue N2 %,94.58,56.50138,442.0,164.0
+Feng1999,Fig. 13,N2 recovery %,45 C,residue N2 %,96.1,48.61157,518.0,199.8
+Feng1999,Fig. 13,N2 recovery %,45 C,residue N2 %,96.26,48.61157,526.0,199.8
+Feng1999,Fig. 13,N2 recovery %,45 C,residue N2 %,97.256,42.19835,575.8,228.9
+Feng1999,Fig. 13,N2 recovery %,45 C,residue N2 %,98.474,32.83196,636.7,271.4
+Feng1999,Fig. 13,N2 recovery %,45 C,residue N2 %,99.392,19.78512,682.6,330.6
+Feng1999,Fig. 13,N2 productivity Nm3/(m2 h),23 C,residue N2 %,89.164,0.11274,171.2,556.0
+Feng1999,Fig. 13,N2 productivity Nm3/(m2 h),23 C,residue N2 %,89.98,0.09834,212.0,582.0
+Feng1999,Fig. 13,N2 productivity Nm3/(m2 h),23 C,residue N2 %,90.98,0.08166,262.0,612.1
+Feng1999,Fig. 13,N2 productivity Nm3/(m2 h),23 C,residue N2 %,92.086,0.06931,317.3,634.4
+Feng1999,Fig. 13,N2 productivity Nm3/(m2 h),23 C,residue N2 %,93.86,0.05302,406.0,663.8
+Feng1999,Fig. 13,N2 productivity Nm3/(m2 h),23 C,residue N2 %,94.368,0.04427,431.4,679.6
+Feng1999,Fig. 13,N2 productivity Nm3/(m2 h),23 C,residue N2 %,95.42,0.03601,484.0,694.5
+Feng1999,Fig. 13,N2 productivity Nm3/(m2 h),23 C,residue N2 %,97.194,0.02548,572.7,713.5
+Feng1999,Fig. 13,N2 productivity Nm3/(m2 h),23 C,residue N2 %,97.426,0.02548,584.3,713.5
+Feng1999,Fig. 13,N2 productivity Nm3/(m2 h),23 C,residue N2 %,98.798,0.01607,652.9,730.5
+Feng1999,Fig. 13,N2 productivity Nm3/(m2 h),23 C,residue N2 %,99.288,0.01025,677.4,741.0
+Feng1999,Fig. 13,N2 productivity Nm3/(m2 h),23 C,residue N2 %,99.466,0.00632,686.3,748.1
+Feng1999,Fig. 13,N2 productivity Nm3/(m2 h),45 C,residue N2 %,91.53,0.12482,289.5,534.2
+Feng1999,Fig. 13,N2 productivity Nm3/(m2 h),45 C,residue N2 %,92.422,0.10803,334.1,564.5
+Feng1999,Fig. 13,N2 productivity Nm3/(m2 h),45 C,residue N2 %,93.438,0.09136,384.9,594.6
+Feng1999,Fig. 13,N2 productivity Nm3/(m2 h),45 C,residue N2 %,94.596,0.07607,442.8,622.2
+Feng1999,Fig. 13,N2 productivity Nm3/(m2 h),45 C,residue N2 %,96.12,0.05546,519.0,659.4
+Feng1999,Fig. 13,N2 productivity Nm3/(m2 h),45 C,residue N2 %,96.26,0.05546,526.0,659.4
+Feng1999,Fig. 13,N2 productivity Nm3/(m2 h),45 C,residue N2 %,97.256,0.04332,575.8,681.3
+Feng1999,Fig. 13,N2 productivity Nm3/(m2 h),45 C,residue N2 %,98.47,0.02925,636.5,706.7
+Feng1999,Fig. 13,N2 productivity Nm3/(m2 h),45 C,residue N2 %,99.396,0.01468,682.8,733.0
+Feng1999,Fig. 14,O2 recovery %,23 C,permeate O2 %,26.03592,99.30939,255.0,18.0
+Feng1999,Fig. 14,O2 recovery %,23 C,permeate O2 %,28.33333,99.30939,310.0,18.0
+Feng1999,Fig. 14,O2 recovery %,23 C,permeate O2 %,31.6792,95.26243,390.1,47.3
+Feng1999,Fig. 14,O2 recovery %,23 C,permeate O2 %,31.9883,98.23204,397.5,25.8
+Feng1999,Fig. 14,O2 recovery %,23 C,permeate O2 %,35.22556,89.33702,475.0,90.2
+Feng1999,Fig. 14,O2 recovery %,23 C,permeate O2 %,36.9716,85.59392,516.8,117.3
+Feng1999,Fig. 14,O2 recovery %,23 C,permeate O2 %,38.12865,84.12983,544.5,127.9
+Feng1999,Fig. 14,O2 recovery %,23 C,permeate O2 %,40.43024,76.40884,599.6,183.8
+Feng1999,Fig. 14,O2 recovery %,23 C,permeate O2 %,41.6249,71.62983,628.2,218.4
+Feng1999,Fig. 14,O2 recovery %,23 C,permeate O2 %,43.0117,65.99448,661.4,259.2
+Feng1999,Fig. 14,O2 recovery %,23 C,permeate O2 %,43.81788,62.07182,680.7,287.6
+Feng1999,Fig. 14,O2 recovery %,45 C,permeate O2 %,24.21888,99.17127,211.5,19.0
+Feng1999,Fig. 14,O2 recovery %,45 C,permeate O2 %,27.34336,98.20442,286.3,26.0
+Feng1999,Fig. 14,O2 recovery %,45 C,permeate O2 %,29.77444,95.41436,344.5,46.2
+Feng1999,Fig. 14,O2 recovery %,45 C,permeate O2 %,31.59566,92.59669,388.1,66.6
+Feng1999,Fig. 14,O2 recovery %,45 C,permeate O2 %,33.98079,87.40331,445.2,104.2
+Feng1999,Fig. 14,O2 recovery %,45 C,permeate O2 %,35.4386,83.39779,480.1,133.2
+Feng1999,Fig. 14,O2 recovery %,45 C,permeate O2 %,36.74603,79.28177,511.4,163.0
+Feng1999,Fig. 14,O2 recovery %,45 C,permeate O2 %,37.80702,75.60773,536.8,189.6
+Feng1999,Fig. 14,O2 productivity Nm3/(m2 h),23 C,permeate O2 %,24.18964,0.00928,210.8,692.7
+Feng1999,Fig. 14,O2 productivity Nm3/(m2 h),23 C,permeate O2 %,25.97744,0.00992,253.6,688.1
+Feng1999,Fig. 14,O2 productivity Nm3/(m2 h),23 C,permeate O2 %,28.30827,0.01082,309.4,681.6
+Feng1999,Fig. 14,O2 productivity Nm3/(m2 h),23 C,permeate O2 %,31.59148,0.01326,388.0,664.0
+Feng1999,Fig. 14,O2 productivity Nm3/(m2 h),23 C,permeate O2 %,31.99666,0.01272,397.7,667.9
+Feng1999,Fig. 14,O2 productivity Nm3/(m2 h),23 C,permeate O2 %,35.20468,0.01439,474.5,655.9
+Feng1999,Fig. 14,O2 productivity Nm3/(m2 h),23 C,permeate O2 %,36.95906,0.01546,516.5,648.2
+Feng1999,Fig. 14,O2 productivity Nm3/(m2 h),23 C,permeate O2 %,38.10777,0.01785,544.0,631.0
+Feng1999,Fig. 14,O2 productivity Nm3/(m2 h),23 C,permeate O2 %,40.40518,0.01937,599.0,620.0
+Feng1999,Fig. 14,O2 productivity Nm3/(m2 h),23 C,permeate O2 %,41.61654,0.02049,628.0,612.0
+Feng1999,Fig. 14,O2 productivity Nm3/(m2 h),23 C,permeate O2 %,42.99916,0.02115,661.1,607.2
+Feng1999,Fig. 14,O2 productivity Nm3/(m2 h),23 C,permeate O2 %,43.78864,0.02217,680.0,599.9
+Feng1999,Fig. 14,O2 productivity Nm3/(m2 h),45 C,permeate O2 %,24.20635,0.01911,211.2,621.9
+Feng1999,Fig. 14,O2 productivity Nm3/(m2 h),45 C,permeate O2 %,27.29323,0.02254,285.1,597.2
+Feng1999,Fig. 14,O2 productivity Nm3/(m2 h),45 C,permeate O2 %,29.75355,0.02521,344.0,578.0
+Feng1999,Fig. 14,O2 productivity Nm3/(m2 h),45 C,permeate O2 %,31.58312,0.02731,387.8,562.9
+Feng1999,Fig. 14,O2 productivity Nm3/(m2 h),45 C,permeate O2 %,33.97243,0.03021,445.0,542.0
+Feng1999,Fig. 14,O2 productivity Nm3/(m2 h),45 C,permeate O2 %,35.43024,0.03229,479.9,527.0
+Feng1999,Fig. 14,O2 productivity Nm3/(m2 h),45 C,permeate O2 %,36.72932,0.03424,511.0,513.0
+Feng1999,Fig. 14,O2 productivity Nm3/(m2 h),45 C,permeate O2 %,37.77778,0.03592,536.1,500.9

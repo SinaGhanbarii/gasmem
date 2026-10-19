@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gasmem"
+version = "1.0.0"
+description = "Stage cut versus performance in gas membrane separators: well-mixed, cross-flow, co-/counter-current, rating with pressure drop, multistage energy and cost."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.24", "scipy>=1.10", "pandas>=2.0", "matplotlib>=3.7"]
+
+[project.optional-dependencies]
+notebooks = ["ipywidgets>=8.0", "jupyterlab>=4.0"]
+test = ["pytest>=7.0"]
+
+[tool.setuptools]
+packages = ["gasmem"]
+
+[tool.setuptools.package-data]
+gasmem = ["data/*.csv"]
