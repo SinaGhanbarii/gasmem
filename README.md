@@ -1,5 +1,7 @@
 # gasmem: stage cut versus performance in gas membrane separators
 
+[![tests](https://github.com/SinaGhanbarii/gasmem/actions/workflows/tests.yml/badge.svg)](https://github.com/SinaGhanbarii/gasmem/actions/workflows/tests.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) ![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue)
+
 `gasmem` is an open Python toolkit for sizing, rating and comparing gas permeation stages. It answers the first question every membrane design starts with:
 
 > **How much of the feed should permeate (the stage cut, θ), and what does that choice cost in purity, recovery, membrane area and compression power?**
